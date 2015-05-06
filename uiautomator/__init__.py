@@ -505,6 +505,24 @@ class AutomatorServer(object):
         return "http://%s:%d/jsonrpc/0" % (self.adb.adb_server_host, self.local_port)
 
 
+class AndroidText(list):
+    _chr_to_keycode_dict = {chr(i+97): i+29 for i in range(26)}
+    _keycode_to_chr_dict = {i+29: chr(i+97) for i in range(26)}
+
+    def __init__(self, text):
+        super(AndroidText, self).__init__(self.text_to_keycodes(text))
+
+    def __str__(self):
+        return self.keycodes_to_text(self)
+
+    @classmethod
+    def text_to_keycodes(cls, text):
+        return [cls._chr_to_keycode_dict[i] for i in list(text)]
+
+    @classmethod
+    def keycodes_to_text(cls, keycodes):
+        return "".join([cls._keycode_to_chr_dict[i] for i in keycodes])
+
 class AutomatorDevice(object):
 
     '''uiautomator wrapper of android device'''
@@ -583,6 +601,14 @@ class AutomatorDevice(object):
     def freeze_rotation(self, freeze=True):
         '''freeze or unfreeze the device rotation in current status.'''
         self.server.jsonrpc.freezeRotation(freeze)
+
+    def type(self, text):
+        text = AndroidText(text) if isinstance(text, basestring) else text
+        if isinstance(text, AndroidText):
+            for keycode in text:
+                self.press(keycode)
+        else:
+            self.press(text)
 
     @property
     def orientation(self):
